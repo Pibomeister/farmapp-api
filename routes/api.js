@@ -11,22 +11,16 @@ router.get('/drugs', function(req, res, next) {
   		res.json(data);
   	}
   });
-  //res.send('Bienvenido a mi servidorcito');
 
 });
 
-router.get('/insert', function(req, res, next) {
-  console.log('hit the route jack');
-  var dr = new Drug({
-	name : 'Nombre',
-	fancyName : 'Pene',
-	price: 120,
-	rating : [4,5,4,4,3],
-	discount : 18
-  }).save((err,data)=>{
-		  if(err) console.log(err);
-		  else console.log(data);
-	}
+router.post('/drugs', function(req, res, next) {
+
+	let body = req.body;
+  var dr = new Drug(body).save((err,data)=>{
+			if(err) res.json({"Error" : err});
+			else res.json({"Respuesta": "Satisfactorio"});
+		}
   );
 
 

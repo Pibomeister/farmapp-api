@@ -7,6 +7,7 @@ const logger = require('morgan');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 const helmet = require('helmet');
+const cors = require('cors');
 
 const db = require('./db/config');
 
@@ -19,7 +20,7 @@ const app = express();
 app.use(logger('dev'));
 app.use(helmet());
 app.use(bodyParser.json());
-
+app.use(cors());
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
