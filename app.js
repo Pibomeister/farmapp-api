@@ -28,7 +28,10 @@ app.use('/api', api);
 app.use(bodyParser.urlencoded({ extended: false }));
 //Always send the angular app regardless of the route
 app.get('*', (req, res) => {
+	
    res.sendFile(path.join(__dirname, 'dist/index.html'));
+   
 });
+
 
 module.exports = app;

@@ -1,7 +1,8 @@
+'use strict';
 const mongoose = require('mongoose');
-
+const nombre = "FARMACIA";
 mongoose.Promise = global.Promise;
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost/farmacia');
+mongoose.connect('mongodb://localhost/farmacia');
 
 
 mongoose.connection.on('error', err => {
@@ -9,7 +10,7 @@ mongoose.connection.on('error', err => {
 });
 
 mongoose.connection.on('open', () => {
-  console.log('Conectado a base de datos.');
+  console.log(`Conectado a base de datos ${nombre}`);
 });
 
 module.exports = mongoose;
