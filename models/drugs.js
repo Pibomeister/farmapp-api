@@ -8,7 +8,8 @@ let drugSchema = mongoose.Schema({
 	fancyName : String,
 	price : Number,
 	rating: [Number],
-	discount : Number
+	discount : Number,
+	imgUrl: String
 });
 
 // Modell 'init' funktion
