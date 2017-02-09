@@ -8,11 +8,15 @@ const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 const helmet = require('helmet');
 const cors = require('cors');
+const passport = require('passport');
+const flash    = require('connect-flash');
+const db = require('./config/db');
 
-const db = require('./db/config');
+var passport_conf = require('./config/passport');
 
-const api = require('./routes/api');
-
+const apiRoutes = require('./routes/api');
+const userRoutes = require('./routes/user');
+passport_conf(passport);
 const app = express();
 
 // uncomment after placing your favicon in /public
@@ -23,8 +27,11 @@ app.use(bodyParser.json());
 app.use(cors());
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(passport.initialize());
+app.use('/api', apiRoutes);
 
-app.use('/api', api);
+userRoutes(app,passport);
+
 
 app.use(bodyParser.urlencoded({ extended: false }));
 //Always send the angular app regardless of the route

@@ -5,7 +5,7 @@ mongoose.Promise = global.Promise;
 mongoose.connect('mongodb://localhost/farmacia');
 
 
-mongoose.connection.on('error', err => {
+mongoose.connection.on('error', (err) => {
   console.log('Error conectando con la base de datos', err);
 });
 
