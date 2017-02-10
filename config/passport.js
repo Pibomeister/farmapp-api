@@ -1,85 +1,33 @@
-/**
- * Created by Farid on 8/2/2017.
- */
-// load all the things we need
-var LocalStrategy    = require('passport-local').Strategy;
-// load up the user model
-var User       = require('../models/user');
+const User = require('../models/user.js');
+const jwt = require('jsonwebtoken');
+const passport = require("passport");
+const passportJWT = require("passport-jwt");
+var ExtractJwt = passportJWT.ExtractJwt;
+var JwtStrategy = passportJWT.Strategy;
+var jwtOptions = {}
+jwtOptions.jwtFromRequest = ExtractJwt.fromAuthHeader();
+jwtOptions.secretOrKey = 'dsahfh783618HVJHD&!&%GTre3s';
+var strategy = new JwtStrategy(jwtOptions, function(jwt_payload, done) {
+    console.log('payload received', jwt_payload);
+    // usually this would be a database call:
 
-module.exports = function(passport) {
-    // =========================================================================
-    // LOCAL SIGNUP ============================================================
-    // =========================================================================
-    passport.use('local-signup', new LocalStrategy({
-            // by default, local strategy uses username and password, we will override with email
-            usernameField : 'email',
-            passwordField : 'password',
-            passReqToCallback : true // allows us to pass in the req from our route (lets us check if a user is logged in or not)
-        },
-        function(req, email, password, done) {
-            if (email)
-                email = email.toLowerCase(); // Use lower-case e-mails to avoid case-sensitive e-mail matching
-
-            // asynchronous
-            process.nextTick(function() {
-                // if the user is not already logged in:
-                if (!req.user) {
-                    User.findOne({ 'local.email' :  email }, function(err, user) {
-                        // if there are any errors, return the error
-                        if (err)
-                            return done(err);
-
-                        // check to see if theres already a user with that email
-                        if (user) {
-                            return done(null, false, {
-                                message: 'User already exists'
-                            });
-                        } else {
-
-                            // create the user
-                            var newUser            = new User();
-
-                            newUser.local.email    = email;
-                            newUser.local.password = newUser.generateHash(password);
-
-                            newUser.save(function(err) {
-                                if (err)
-                                    return done(err);
-
-                                return done(null, newUser);
-                            });
-                        }
-
-                    });
-                    // if the user is logged in but has no local account...
-                } else if ( !req.user.local.email ) {
-                    // ...presumably they're trying to connect a local account
-                    // BUT let's check if the email used to connect a local account is being used by another user
-                    User.findOne({ 'local.email' :  email }, function(err, user) {
-                        if (err)
-                            return done(err);
-
-                        if (user) {
-                            return done(null, false, req.flash('loginMessage', 'That email is already taken.'));
-                            // Using 'loginMessage instead of signupMessage because it's used by /connect/local'
-                        } else {
-                            var user = req.user;
-                            user.local.email = email;
-                            user.local.password = user.generateHash(password);
-                            user.save(function (err) {
-                                if (err)
-                                    return done(err);
-
-                                return done(null,user);
-                            });
-                        }
-                    });
-                } else {
-                    // user is logged in and already has a local account. Ignore signup. (You should log out before trying to create a new account, user!)
-                    return done(null, req.user);
-                }
-
+    User.findOne({_id: jwt_payload.id}, function (err, user) {
+        if (err) {
+            return res.status(500).json({
+                title: 'error occured',
+                error: err
             });
+        }
+        if (user) {
+            done(null, user);
+        }
+        else {
+            done(null, false);
+        }
+    });
+});
 
-        }));
-};
+module.exports = {
+    strategy : strategy,
+    options : jwtOptions
+}

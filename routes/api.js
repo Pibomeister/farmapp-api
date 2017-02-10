@@ -3,27 +3,30 @@
 const express = require('express');
 const router = express.Router();
 const Drug = require('../models/drugs.js');
+const passport = require('passport');
 /* Einstell hier der API Endpunkt - e.g. GET /drugs */
-router.get('/drugs', function(req, res, next) {
-  Drug.find((err,data) => {
-  	if(err) console.log(err);
-  	else {
-  		res.json(data);
-  	}
-  });
+module.exports = function(passport) {
 
-});
+    router.get('/drugs', passport.authenticate('jwt', {session: false}), function (req, res, next) {
+        Drug.find(function (err, data) {
+            if (err) console.log(err);
+            else {
+                res.json(data);
+            }
+        });
 
-router.post('/drugs', function(req, res, next) {
+    });
 
-	let body = req.body;
-  var dr = new Drug(body).save((err,data)=>{
-			if(err) res.json({"Error" : err});
-			else res.json({"Respuesta": "Satisfactorio"});
-		}
-  );
+    router.post('/drugs', function (req, res, next) {
+        var body = req.body;
+        var dr = new Drug(body).save(function(err, data){
+                if(err) res.json({"Error": err});
+        else
+        res.json({"Respuesta": "Satisfactorio"});
+    	});
 
 
-});	
+    });
 
-module.exports = router;
+    return router;
+}

@@ -16,7 +16,6 @@ var passport_conf = require('./config/passport');
 
 const apiRoutes = require('./routes/api');
 const userRoutes = require('./routes/user');
-passport_conf(passport);
 const app = express();
 
 // uncomment after placing your favicon in /public
@@ -28,9 +27,10 @@ app.use(cors());
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(passport.initialize());
-app.use('/api', apiRoutes);
 
-userRoutes(app,passport);
+passport.use(passport_conf.strategy);
+app.use('/api', apiRoutes(passport));
+app.use('/user', userRoutes)
 
 
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -40,6 +40,8 @@ app.get('*', (req, res) => {
    res.sendFile(path.join(__dirname, 'dist/index.html'));
    
 });
+
+
 
 
 module.exports = app;

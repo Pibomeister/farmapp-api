@@ -1,12 +1,12 @@
 // load the things we need
 var mongoose = require('mongoose');
 var bcrypt   = require('bcryptjs');
-
+var mongooseUniqueValidator = require('mongoose-unique-validator');
 // define the schema for our user model
 var userSchema = mongoose.Schema({
 
     local            : {
-        email        : String,
+        email: {type: String, required: true, unique: true},
         password     : String
     },
     facebook         : {
@@ -27,6 +27,8 @@ userSchema.methods.generateHash = function(password) {
 userSchema.methods.validPassword = function(password) {
     return bcrypt.compareSync(password, this.local.password);
 };
+
+userSchema.plugin(mongooseUniqueValidator);
 
 // create the model for users and expose it to our app
 module.exports = mongoose.model('User', userSchema);
