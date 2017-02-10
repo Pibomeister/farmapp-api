@@ -25,9 +25,9 @@ module.exports = function(passport) {
         var body = req.body;
         var userid = req.query.userid;
         User.findById(userid, function(err, user){
-            if(!user){
+            /*if(!user){
                return res.json({error: "Usuario invalido"});
-            }
+            }*/
             var dr = new Drug({
                 name : body.name,
                 fancyName : body.fancyName,

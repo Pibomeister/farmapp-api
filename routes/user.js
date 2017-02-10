@@ -12,7 +12,7 @@ jwtOptions.secretOrKey = passport_conf.options.secretOrKey;
 const express = require('express');
 const router = express.Router();
     router.post('/signup', function(req,res){
-
+        console.log('Hit the route jack');
         var usr = new User();
         usr.local.password = usr.generateHash(req.body.password), //one way, cannot be decrypted
         usr.local.email = req.body.email
