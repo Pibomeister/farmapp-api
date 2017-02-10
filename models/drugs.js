@@ -1,6 +1,7 @@
 'use strict';
 const mongoose = require('mongoose');
-
+var Schema = mongoose.Schema;
+const User = require('./user');
 // Einstell hier das 'drug' Modell
 
 let drugSchema = mongoose.Schema({
@@ -9,7 +10,8 @@ let drugSchema = mongoose.Schema({
 	price : Number,
 	rating: [Number],
 	discount : Number,
-	imgUrl: String
+	imgUrl: String,
+    user: {type: Schema.Types.ObjectId, ref: 'User'}
 });
 
 // Modell 'init' funktion

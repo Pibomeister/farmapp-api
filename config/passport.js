@@ -9,6 +9,7 @@ jwtOptions.jwtFromRequest = ExtractJwt.fromAuthHeader();
 jwtOptions.secretOrKey = 'dsahfh783618HVJHD&!&%GTre3s';
 var strategy = new JwtStrategy(jwtOptions, function(jwt_payload, done) {
     console.log('payload received', jwt_payload);
+    var dec = jwt.decode(jwt_payload);
     // usually this would be a database call:
 
     User.findOne({_id: jwt_payload.id}, function (err, user) {
