@@ -17,7 +17,7 @@ module.exports = function(passport) {
 
     });
 
-    router.post('/drugs', function (req, res, next) {
+    router.post('/drugs', passport.authenticate('jwt', {session: false}), function (req, res, next) {
         var body = req.body;
         var dr = new Drug(body).save(function(err, data){
                 if(err) res.json({"Error": err});

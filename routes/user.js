@@ -55,9 +55,9 @@ const router = express.Router();
             }
 
             if (user.validPassword(password)) {
-                var payload = {id: user.id};
+                var payload = {id: user.id, email: user.local.email};
                 var token = jwt.sign(payload, jwtOptions.secretOrKey);
-                res.json({message: "ok", token: token});
+                res.json({id: user.id, token: token});
             }
 
         })

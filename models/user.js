@@ -3,10 +3,20 @@ var mongoose = require('mongoose');
 var bcrypt   = require('bcryptjs');
 var mongooseUniqueValidator = require('mongoose-unique-validator');
 // define the schema for our user model
+var validateEmail = function(email) {
+    var re = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+    return re.test(email)
+};
+
 var userSchema = mongoose.Schema({
 
-    local            : {
-        email: {type: String, required: true, unique: true},
+    local: {
+        email: {
+            type: String,
+            required: true,
+            unique: true,
+            validate: [validateEmail, 'Please fill a valid email address']
+        },
         password     : String
     },
     facebook         : {
