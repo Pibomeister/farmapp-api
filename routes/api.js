@@ -9,7 +9,6 @@ const passport = require('passport');
 module.exports = function(passport) {
 
     router.get('/drugs', passport.authenticate('jwt', {session: false}), function (req, res, next) {
-
         console.log(req.header('Authorization'));
 
         Drug.find(function (err, data) {
