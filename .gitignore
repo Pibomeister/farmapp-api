@@ -1,2 +1,2 @@
 node_modules/
-config/facebook-secret.js
+config/secrets.js

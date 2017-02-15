@@ -13,7 +13,7 @@ var strategy = new JwtStrategy(jwtOptions, function(jwt_payload, done) {
     
     var dec = jwt.decode(jwt_payload);
     // usually this would be a database call:
-
+    console.log(jwt_payload);
     User.findOne({_id: jwt_payload.id}, function (err, user) {
         if (err) {
             return res.status(500).json({

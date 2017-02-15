@@ -13,7 +13,7 @@ var userSchema = mongoose.Schema({
     local: {
         email: {
             type: String,
-            unique: true,
+            //unique: true,
             validate: [validateEmail, 'Please fill a valid email address']
         },
         password     : String

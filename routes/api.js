@@ -4,12 +4,27 @@ const express = require('express');
 const router = express.Router();
 const Drug = require('../models/drugs.js');
 const User = require('../models/user');
-const passport = require('passport');
+const secrets = require('../config/secrets');
+const jwt = require('jsonwebtoken');
+
 /* Einstell hier der API Endpunkt - e.g. GET /drugs */
 module.exports = function(passport) {
 
-    router.get('/drugs', passport.authenticate('jwt', {session: false}), function (req, res, next) {
-        console.log(req.header('Authorization'));
+    router.use('/', function(req,res,next){
+
+        jwt.verify(req.get('Authorization'), secrets.jwt, function(err, decoded){
+            if(err){ //token invaild/expired
+                return res.status(401).json({
+                    title : 'Not authenticated',
+                    error :err
+                });
+            }
+            next(); //let the request continue
+        })
+    });
+
+    router.get('/drugs', function (req, res, next) {
+        //console.log(req.header('Authorization'));
 
         Drug.find(function (err, data) {
             if (err) console.log(err);
@@ -20,7 +35,7 @@ module.exports = function(passport) {
 
     });
 
-    router.post('/drugs', passport.authenticate('jwt', {session: false}), function (req, res, next) {
+    router.post('/drugs', function (req, res, next) {
         var body = req.body;
         var userid = req.query.userid;
         User.findById(userid, function(err, user){
@@ -48,4 +63,4 @@ module.exports = function(passport) {
     });
 
     return router;
-}
+};
