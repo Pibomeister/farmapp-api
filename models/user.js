@@ -12,9 +12,9 @@ var userSchema = mongoose.Schema({
 
     local: {
         email: {
-            type: String,
+            type: String
             //unique: true,
-            validate: [validateEmail, 'Please fill a valid email address']
+            //validate: [validateEmail, 'Please fill a valid email address']
         },
         password     : String
     },
@@ -37,7 +37,7 @@ userSchema.methods.validPassword = function(password) {
     return bcrypt.compareSync(password, this.local.password);
 };
 
-userSchema.plugin(mongooseUniqueValidator);
+//userSchema.plugin(mongooseUniqueValidator);
 
 // create the model for users and expose it to our app
 module.exports = mongoose.model('User', userSchema);

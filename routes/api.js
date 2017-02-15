@@ -25,7 +25,7 @@ module.exports = function(passport) {
 
     router.get('/drugs', function (req, res, next) {
         //console.log(req.header('Authorization'));
-
+        console.log('VALID');
         Drug.find(function (err, data) {
             if (err) console.log(err);
             else {
