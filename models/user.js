@@ -11,18 +11,19 @@ var validateEmail = function(email) {
 var userSchema = mongoose.Schema({
 
     local: {
-        email: {
-            type: String
-            //unique: true,
-            //validate: [validateEmail, 'Please fill a valid email address']
-        },
-        password     : String
+        email: String,
+        password : String
     },
-    facebook         : {
-        id           : String,
-        token        : String,
-        email        : String,
-        name         : String
+    facebook : {
+        id : String,
+        token : String,
+        email : String,
+        name : String
+    },
+    google : {
+        id : String,
+        name : String,
+        email :String
     }
 
 });

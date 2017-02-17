@@ -8,29 +8,29 @@ const jwt = require('jsonwebtoken');
 const secrets = require('../config/secrets');
 const express = require('express');
 const router = express.Router();
-    router.post('/signup', function(req,res){
-        console.log('Hit the route jack');
-        var usr = new User();
-        usr.local.password = usr.generateHash(req.body.password), //one way, cannot be decrypted
-        usr.local.email = req.body.email
+router.post('/signup', function(req,res){
+    console.log('Hit the route jack');
+    var usr = new User();
+    usr.local.password = usr.generateHash(req.body.password), //one way, cannot be decrypted
+    usr.local.email = req.body.email
 
-        usr.save(function(err, doc, num){
-            if(err){
-                return res.status(500).json({
-                    title : 'Internal error occured',
-                    error: err
-                });
-            }
-            res.status(201).json({
-            message: 'User created',
-            user_id: doc._id,
-            count: num
+    usr.save(function(err, doc, num){
+        if(err){
+            return res.status(500).json({
+                title : 'Internal error occured',
+                error: err
             });
+        }
+        res.status(201).json({
+        message: 'Local User created',
+        user_id: doc._id,
+        count: num
         });
-
-
     });
-    router.post("/login", function(req, res) {
+
+});
+
+router.post("/login", function(req, res) {
     if (req.body.email && req.body.password) {
         var email = req.body.email;
         var password = req.body.password;
@@ -57,56 +57,102 @@ const router = express.Router();
 
     })
 
+});
+
+
+
+router.post("/fbuser", function(req, res) {
+    console.log(req.body);
+    User.findOne({'facebook.email': req.body.user.email}, function(err, user){
+        if (err) {
+            console.log(err);
+            return res.status(500).json({
+                title: 'error occured',
+                error: err
+            });
+        }
+
+        if(user){
+            console.log('fb user already on our DB');
+            let token = jwt.sign({user: user}, secrets.jwt, {expiresIn: 7200});
+            res.status(201).json({
+                id: user.id,
+                token: token
+            });
+
+        }
+        else{
+            user = new User();
+            user.facebook.email = req.body.user.email;
+            user.facebook.id = req.body.user.id;
+            user.facebook.token = req.body.user.token;
+            user.facebook.name = req.body.user.name;
+            console.log('user to be saved', user);
+            user.save(function (err, doc, num) {
+                if (err) {
+                    console.log(err);
+                    return res.status(500).json({
+                        title: 'Internal error occured',
+                        error: err
+                    });
+                }
+                else {
+                    res.status(201).json({
+                        message: 'Facebook User created',
+                        user_id: doc._id,
+                        count: num
+                    });
+                }
+            });
+        }
     });
+});
 
+router.post("/googleuser", function(req, res) {
+    console.log(req.body);
+    User.findOne({'google.email': req.body.user.email}, function(err, user){
+        if (err) {
+            console.log(err);
+            return res.status(500).json({
+                title: 'error occured',
+                error: err
+            });
+        }
 
+        if(user){
+            console.log('google user already on our DB');
+            let token = jwt.sign({user: user}, secrets.jwt, {expiresIn: 7200});
+            res.status(201).json({
+                id: user.id,
+                token: token
+            });
 
-    router.post("/fbuser", function(req, res) {
-        console.log(req.body);
-        User.findOne({'facebook.email': req.body.user.email}, function(err, user){
-            if (err) {
-                console.log(err);
-                return res.status(500).json({
-                    title: 'error occured',
-                    error: err
-                });
-            }
-
-            if(user){
-                console.log('fb user already on our DB');
-                let token = jwt.sign({user: user}, secrets.jwt, {expiresIn: 7200});
-                res.status(201).json({
-                    id: user.id,
-                    token: token
-                });
-
-            }
-            else{
-                user = new User();
-                user.facebook.email = req.body.user.email;
-                user.facebook.id = req.body.user.id;
-                user.facebook.token = req.body.user.token;
-                user.facebook.name = req.body.user.name;
-                console.log('user to be saved', user);
-                user.save(function (err, doc, num) {
-                    if (err) {
-                        console.log(err);
-                        return res.status(500).json({
-                            title: 'Internal error occured',
-                            error: err
-                        });
-                    }
-                    else {
-                        res.status(201).json({
-                            message: 'User created',
-                            user_id: doc._id,
-                            count: num
-                        });
-                    }
-                });
-            }
+        }
+        else{
+            user = new User();
+            user.google.email = req.body.user.email;
+            user.google.id = req.body.user.id;
+            user.google.name = req.body.user.name;
+            console.log('user to be saved', user);
+            user.save(function (err, doc, num) {
+                if (err) {
+                    console.log(err);
+                    return res.status(500).json({
+                        title: 'Internal error occured',
+                        error: err
+                    });
+                }
+                else {
+                    res.status(201).json({
+                        message: 'Google User created',
+                        user_id: doc._id,
+                        count: num
+                    });
+                }
+            });
+        }
     });
-    });
+});
 
     /*router.get('/login/facebook',
         passport.authenticate('facebook', { scope : ['email'] }), function(req,res){
