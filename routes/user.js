@@ -11,6 +11,7 @@ const router = express.Router();
 router.post('/signup', function(req,res){
     console.log('Hit the route jack');
     var usr = new User();
+    usr.local.name = req.body.name;
     usr.local.password = usr.generateHash(req.body.password), //one way, cannot be decrypted
     usr.local.email = req.body.email
 
@@ -154,27 +155,51 @@ router.post("/googleuser", function(req, res) {
     });
 });
 
-    /*router.get('/login/facebook',
-        passport.authenticate('facebook', { scope : ['email'] }), function(req,res){
-            console.log('gat me');
-        });
-    router.get('/login/facebook/callback',
-    passport.authenticate('facebook', { failureRedirect: '/error'}),
-       
-    function(req, res) {
-        console.log('bien');
-        console.log(req.user);
-        res.json({
-            userid: req.user.id,
-            token: req.user.facebook.token,
-            email : req.user.facebook.email
-        });
-        
+router.use('/', function(req,res,next){
+
+        jwt.verify(req.get('Authorization'), secrets.jwt, function(err, decoded){
+            if(err){ //token invaild/expired
+                return res.status(401).json({
+                    title : 'Not authenticated',
+                    error :err
+                });
+            }
+            next(); //let the request continue
+        })
+});
+
+
+router.get('/:userid', function(req,res){
+    var uid = req.params.userid;
+    console.log('uid', uid);
+    var returnedUser = {};
+    User.findOne({'_id' : uid}, function(err, user){
+        if(err) return res.status(500).send('Algo salio mal');
+        if(user){
+            if(user.facebook.email !== undefined){
+                returnedUser.name = user.facebook.name;
+                returnedUser.email = user.facebook.email;
+            }
+            else if(user.google.email !== undefined) {
+                returnedUser.name = user.google.name;
+                returnedUser.email = user.google.email;
+            }
+
+            else{
+                returnedUser.name = user.local.name;
+                returnedUser.email = user.local.email;
+            }
+
+            res.json(returnedUser);
+        }
+
+        else{
+            res.status(404).send('Non existing user');
+        }
+
     });
 
-    router.get('/account', function(req,res){
-        console.log(req.user);
-        res.send("todo salio chingon");
-    });*/
+
+});
 
 module.exports = router;

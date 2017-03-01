@@ -11,6 +11,7 @@ var validateEmail = function(email) {
 var userSchema = mongoose.Schema({
 
     local: {
+        name : String,
         email: String,
         password : String
     },
