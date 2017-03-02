@@ -8,27 +8,105 @@ const jwt = require('jsonwebtoken');
 const secrets = require('../config/secrets');
 const express = require('express');
 const router = express.Router();
+const transporter = require('../config/emailsender');
+const host = "http://localhost:3000";
+
+
+function validateEmail(email) {
+    var re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    return re.test(email);
+}
+
 router.post('/signup', function(req,res){
     console.log('Hit the route jack');
-    var usr = new User();
-    usr.local.name = req.body.name;
-    usr.local.password = usr.generateHash(req.body.password), //one way, cannot be decrypted
-    usr.local.email = req.body.email
-
-    usr.save(function(err, doc, num){
+    
+    
+    if(req.body.email !== undefined && req.body.password !== undefined){
+        let usr = new User();
+        usr.local.name = req.body.name;
+        usr.local.password = usr.generateHash(req.body.password); //one way, cannot be decrypted
+        usr.local.email = req.body.email;
+        usr.local.verified = false;
+        usr.save(function(err, doc, num){
         if(err){
             return res.status(500).json({
                 title : 'Internal error occured',
                 error: err
             });
         }
-        res.status(201).json({
-        message: 'Local User created',
-        user_id: doc._id,
-        count: num
-        });
-    });
+        res.status(200).send({ mail: usr.local.email});
+        //res.redirect('/user/send/' + usr.local.email);
 
+        });
+
+    }
+
+    else{
+        res.status(401).send('not all fields provided');
+    }
+    
+
+});
+
+
+router.get('/send/:email',function(req,res){
+    let to = validateEmail(req.params.email) ? req.params.email : null;
+    if(to !== null){
+        User.findOne({'local.email' : to}, function(err, user){
+            if(err) res.status(500).send('Internal server error');
+            if(user){
+                let link="http://localhost:3000/user/verify?id="+user._id;
+                console.log('link', link);
+                let mailOptions = {
+                from: '"Farmapp support👻" <roma.team.alpha@gmail.com>', // sender address
+                to: to,
+                subject:"Please confirm your Email account",
+                html : "Hello,<br> Please Click on the link to verify your email.<br><a href="+link+">Click here to verify</a>" 
+            };
+            transporter.sendMail(mailOptions, (error, info) => {
+                    if (error) {
+                        return console.log(error);
+                    }
+                    console.log('Message %s sent: %s', info.messageId, info.response);
+                    res.status(201).send({message: 'El correo ha sido enviado a su cuenta'});
+            });
+
+            }
+        });
+        
+    }
+    else{
+        res.status(401).send('Incorrect parameters');
+    }
+    
+    
+});
+
+router.get('/verify',function(req,res){
+    let id = req.query.id;
+    console.log(req.protocol+"://"+req.get('host'));
+    if(req.protocol+"://"+req.get('host')==host)
+    {
+        console.log("Domain is matched. Information is from Authentic email");
+        User.findOne({'_id' : id}, function(err, user){
+            console.log('user',user);
+            if(err) res.status(500).send('Internal error occured');
+            if(user){
+                user.local.verified = true;
+                user.save(function(err){
+                    console.log('usuario actualizado :D');
+                    if(!err){
+                        res.redirect("http://localhost:4200");
+                        
+                    }
+                });
+            }
+        });
+    }
+    else
+    {
+        res.end("<h1>Request is from unknown source");
+    }
 });
 
 router.post("/login", function(req, res) {
@@ -36,7 +114,7 @@ router.post("/login", function(req, res) {
         var email = req.body.email;
         var password = req.body.password;
     }
-    User.findOne({'local.email': email}, function (err, user) {
+    User.findOne({'local.email': email, 'local.verified' : true}, function (err, user) {
         if (err) {
             return res.status(500).json({
                 title: 'error occured',

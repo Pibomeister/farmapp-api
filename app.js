@@ -9,6 +9,7 @@ const bodyParser = require('body-parser');
 const helmet = require('helmet');
 const cors = require('cors');
 const passport = require('passport');
+const moment = require('moment');
 const flash    = require('connect-flash');
 const db = require('./config/db');
 
@@ -47,7 +48,7 @@ app.use('/user', userRoutes);
 app.use(bodyParser.urlencoded({ extended: false }));
 //Always send the angular app regardless of the route
 
-
+console.log(moment().format());
 
 app.get('/error', (req,res)=>{
     res.json({error:"Hubo un error bien culero"});

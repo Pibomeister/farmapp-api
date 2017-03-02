@@ -13,7 +13,8 @@ var userSchema = mongoose.Schema({
     local: {
         name : String,
         email: String,
-        password : String
+        password : String,
+        verified : Boolean
     },
     facebook : {
         id : String,
@@ -27,7 +28,9 @@ var userSchema = mongoose.Schema({
         email :String
     }
 
-});
+}, {
+  timestamps: true
+  });
 
 // generating a hash
 userSchema.methods.generateHash = function(password) {
