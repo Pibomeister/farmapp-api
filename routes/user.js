@@ -56,7 +56,6 @@ router.get('/send/:email',function(req,res){
             if(err) res.status(500).send('Internal server error');
             if(user){
                 let link="http://localhost:3000/user/verify?id="+user._id;
-                console.log('link', link);
                 let mailOptions = {
                 from: '"Farmapp support👻" <roma.team.alpha@gmail.com>', // sender address
                 to: to,
@@ -96,8 +95,7 @@ router.get('/verify',function(req,res){
                 user.save(function(err){
                     console.log('usuario actualizado :D');
                     if(!err){
-                        res.redirect("http://localhost:4200");
-                        
+                        res.redirect("http://localhost:4200/activate?mail="+user.local.email);
                     }
                 });
             }
@@ -105,7 +103,7 @@ router.get('/verify',function(req,res){
     }
     else
     {
-        res.end("<h1>Request is from unknown source");
+        res.end("<h1>Request is from unknown source</h1>");
     }
 });
 
@@ -114,7 +112,7 @@ router.post("/login", function(req, res) {
         var email = req.body.email;
         var password = req.body.password;
     }
-    User.findOne({'local.email': email, 'local.verified' : true}, function (err, user) {
+    User.findOne({'local.email': email}, function (err, user) {
         if (err) {
             return res.status(500).json({
                 title: 'error occured',
@@ -130,6 +128,13 @@ router.post("/login", function(req, res) {
         }
 
         if (user.validPassword(password)) {
+            if(!user.local.verified){
+                console.log('enter light');
+                return res.status(401).json({
+                    title : 'Login Failed',
+                    error : {message : 'Account hasn\'t been verified, please check your email'}
+                });
+            }
             let token = jwt.sign({user: user}, secrets.jwt, {expiresIn: 7200});
             res.json({id: user.id, token: token});
         }
