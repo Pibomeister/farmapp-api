@@ -11,6 +11,8 @@ const router = express.Router();
 const transporter = require('../config/emailsender');
 const host = "http://localhost:3000";
 
+const {confirmEmail} = require('../emails/emails.js');
+
 
 function validateEmail(email) {
     var re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
@@ -19,8 +21,8 @@ function validateEmail(email) {
 
 router.post('/signup', function(req,res){
     console.log('Hit the route jack');
-    
-    
+
+
     if(req.body.email !== undefined && req.body.password !== undefined){
         let usr = new User();
         usr.local.name = req.body.name;
@@ -44,7 +46,7 @@ router.post('/signup', function(req,res){
     else{
         res.status(401).send('not all fields provided');
     }
-    
+
 
 });
 
@@ -55,12 +57,15 @@ router.get('/send/:email',function(req,res){
         User.findOne({'local.email' : to}, function(err, user){
             if(err) res.status(500).send('Internal server error');
             if(user){
+                let name = user.local.name;
+                console.log('Enviando correo a', name );
                 let link="http://localhost:3000/user/verify?id="+user._id;
+                let emailHtml = confirmEmail(link, name);
                 let mailOptions = {
-                from: '"Farmapp support👻" <roma.team.alpha@gmail.com>', // sender address
+                from: '"Soporte a clientes Farmapp 👻" <roma.team.alpha@gmail.com>', // sender address
                 to: to,
-                subject:"Please confirm your Email account",
-                html : "Hello,<br> Please Click on the link to verify your email.<br><a href="+link+">Click here to verify</a>" 
+                subject:"Porfavor confirme su cuenta en Farmapp",
+                html : emailHtml
             };
             transporter.sendMail(mailOptions, (error, info) => {
                     if (error) {
@@ -72,13 +77,13 @@ router.get('/send/:email',function(req,res){
 
             }
         });
-        
+
     }
     else{
         res.status(401).send('Incorrect parameters');
     }
-    
-    
+
+
 });
 
 router.get('/verify',function(req,res){
