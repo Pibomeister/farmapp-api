@@ -24,22 +24,33 @@ router.post('/signup', function(req,res){
 
 
     if(req.body.email !== undefined && req.body.password !== undefined){
-        let usr = new User();
-        usr.local.name = req.body.name;
-        usr.local.password = usr.generateHash(req.body.password); //one way, cannot be decrypted
-        usr.local.email = req.body.email;
-        usr.local.verified = false;
-        usr.save(function(err, doc, num){
-        if(err){
-            return res.status(500).json({
-                title : 'Internal error occured',
-                error: err
-            });
-        }
-        res.status(200).send({ mail: usr.local.email});
-        //res.redirect('/user/send/' + usr.local.email);
+        User.findOne({'local.email': req.body.email}, function(err,user){
+            console.log(user);
+            if(user){
+                return res.status(403).json({
+                    title : 'Correo ya existente'
+                });
+            }
+            else{
+                let usr = new User();
+                usr.local.name = req.body.name;
+                usr.local.password = usr.generateHash(req.body.password); //one way, cannot be decrypted
+                usr.local.email = req.body.email;
+                usr.local.verified = false;
+                usr.save(function(err, doc, num){
+                if(err){
+                    return res.status(500).json({
+                        title : 'Internal error occured',
+                        error: err
+                    });
+                }
+                res.status(200).send({ mail: usr.local.email});
+                //res.redirect('/user/send/' + usr.local.email);
 
+                });
+            }
         });
+       
 
     }
 
