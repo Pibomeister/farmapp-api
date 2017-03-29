@@ -10,7 +10,7 @@ const jwt = require('jsonwebtoken');
 /* Einstell hier der API Endpunkt - e.g. GET /drugs */
 module.exports = function(passport) {
 
-    router.use('/', function(req,res,next){
+    /*router.use('/', function(req,res,next){
 
         jwt.verify(req.get('Authorization'), secrets.jwt, function(err, decoded){
             if(err){ //token invaild/expired
@@ -21,7 +21,7 @@ module.exports = function(passport) {
             }
             next(); //let the request continue
         })
-    });
+    });*/
 
     router.get('/drugs', function (req, res, next) {
         //console.log(req.header('Authorization'));

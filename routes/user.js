@@ -10,9 +10,12 @@ const express = require('express');
 const router = express.Router();
 const transporter = require('../config/emailsender');
 const host = "http://localhost:3000";
+const neo4j = require('neo4j-driver').v1;
 
-const {confirmEmail} = require('../emails/emails.js');
+const {confirmEmail, orderConfirm} = require('../emails/emails.js');
 
+var driver = neo4j.driver("bolt://localhost", neo4j.auth.basic("neo4j", secrets.neo4j));
+var session = driver.session();
 
 function validateEmail(email) {
     var re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
@@ -107,13 +110,25 @@ router.get('/verify',function(req,res){
             console.log('user',user);
             if(err) res.status(500).send('Internal error occured');
             if(user){
-                user.local.verified = true;
-                user.save(function(err){
-                    console.log('usuario actualizado :D');
-                    if(!err){
-                        res.redirect("http://localhost:4200/activate?mail="+user.local.email);
-                    }
-                });
+                var mid = user.id.toString();
+                session
+                    .run("CREATE(n:User {mongoId:{idParam}}) RETURN n.name", {idParam: mid})
+                    .then(function(result){
+                        console.log('agregado a neo4j');
+                        user.local.verified = true;
+                        session.close();
+                        user.save(function(err){
+                            console.log('usuario actualizado :D');
+                            if(!err){
+                                res.redirect("http://localhost:4200/activate?mail="+user.local.email);
+                            }
+                        });
+                    })
+                    .catch(function(error){
+                        console.log(error);
+                        session.close();
+                    });
+
             }
         });
     }
@@ -253,6 +268,8 @@ router.post("/googleuser", function(req, res) {
         }
     });
 });
+
+
 
 router.use('/', function(req,res,next){
 

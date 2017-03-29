@@ -17,6 +17,7 @@ var passport_conf = require('./config/passport');
 
 const apiRoutes = require('./routes/api');
 const userRoutes = require('./routes/user');
+const orderRoutes = require('./routes/orders');
 const app = express();
 
 // uncomment after placing your favicon in /public
@@ -41,8 +42,11 @@ passport.deserializeUser(function(user, done) {
   done(null, user);
 });
 
+
+
 app.use('/api', apiRoutes(passport));
 app.use('/user', userRoutes);
+app.use('/order', orderRoutes);
 
 
 app.use(bodyParser.urlencoded({ extended: false }));
