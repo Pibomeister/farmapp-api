@@ -32,6 +32,7 @@ router.post('/', function(req,res){
     let total = req.body.total;
     User.findOne({'_id':uid}, function(err, user){
         console.log('user', user);
+        let user_info = getValidUserInfo(user);
         if(err){
            return res.status(500).send('Something gat real fackd ap');
         }
@@ -56,10 +57,11 @@ router.post('/', function(req,res){
         }
 
         let orderid = order._id;
-        let emailHtml = orderConfirm(user.local.name, condensedPedido, total);
+
+        let emailHtml = orderConfirm(user_info.name, condensedPedido, total);
         let mailOptions = {
                 from: '"FarmApp Ventas👻" <roma.team.alpha@gmail.com>', // sender address
-                to: user.local.email,
+                to: user_info.email,
                 subject: `Su pedido # ${orderid}`,
                 html : emailHtml
             };
@@ -79,5 +81,28 @@ router.post('/', function(req,res){
 
     
 });
+
+function getValidUserInfo(user){
+    if(user.local.email !== undefined && user.local.email !== null){
+        return {
+            name : user.local.name,
+            email : user.local.email
+        }
+    }
+
+    else if(user.facebook.email !== undefined && user.facebook.email !== null){
+        return {
+            name : user.facebook.name,
+            email : user.facebook.email
+        }
+    }
+
+    else if(user.google.email !== undefined && user.google.email !== null){
+        return {
+            name : user.google.name,
+            email : user.google.email
+        }
+    }
+}
 
 module.exports = router;
