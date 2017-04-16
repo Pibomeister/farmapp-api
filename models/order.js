@@ -4,12 +4,12 @@ var Schema = mongoose.Schema;
 const User = require('./user');
 let drugSchema = mongoose.Schema(
     {
+    _id: String,
+    createdAt: Number,
 	products : [],
     status : Number,
     total : Number,
-    user: {type: Schema.Types.ObjectId, ref: 'User'}
-    }, {
-  timestamps: true
-});
+    user: String
+    });
 
 module.exports = mongoose.model('Order', drugSchema);

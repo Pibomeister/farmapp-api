@@ -4,10 +4,14 @@
 
 'use strict';
 const User = require('../models/user.js');
+const { ObjectID } = require('mongodb');
 const jwt = require('jsonwebtoken');
 const secrets = require('../config/secrets');
 const express = require('express');
 const router = express.Router();
+const neo4j = require('neo4j-driver').v1;
+var driver = neo4j.driver("bolt://localhost", neo4j.auth.basic("neo4j", secrets.neo4j));
+var session = driver.session();
 const transporter = require('../config/emailsender');
 const {orderConfirm} = require('../emails/emails.js');
 const Order = require('../models/order');
@@ -29,24 +33,49 @@ router.post('/', function(req,res){
 
     let uid = req.body.userId;
     let products = req.body.products;
+    console.log('received products', products);
     let total = req.body.total;
     User.findOne({'_id':uid}, function(err, user){
         console.log('user', user);
         let user_info = getValidUserInfo(user);
         if(err){
+           console.log('User for order not found');
            return res.status(500).send('Something gat real fackd ap');
         }
         else{
         
         let order = new Order();
+        order._id = (new ObjectID()).toString();
+        order.createdAt = (new Date()).getTime();
         order.status = 0;
         order.user = uid;
         order.products = products;
         order.total = total;
         order.save(function(err,order){
         if(err){
+            console.log('Unable to save order');
            return res.status(500).send('Something gat real fackd ap');
         }
+        let orderid = order._id;
+        session
+            .run(`MATCH (a:User{_id:{uid} })
+                  WITH a
+                  UNWIND {products} AS product
+                  MATCH (b:Drug{_id:product._id})
+                  MERGE (b)<-[r:PURCHASED{_id:{oid} }]-(a)
+                  ON CREATE SET r.createdAt = {cat}
+                  RETURN a.name, b.name `, {uid, products, oid: order._id, cat: order.createdAt})
+            .then(function(result){
+                console.log('Order succesfull');
+                result.records.forEach(function(record) {
+                    console.log(record._fields);
+                });
+                session.close();
+            })
+            .catch(function(error){
+                console.log('dat error', error);
+                session.close();
+            });
 
         let condensedPedido = '';
 
@@ -56,7 +85,7 @@ router.post('/', function(req,res){
             `
         }
 
-        let orderid = order._id;
+        
 
         let emailHtml = orderConfirm(user_info.name, condensedPedido, total);
         let mailOptions = {

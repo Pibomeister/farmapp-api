@@ -1,16 +1,18 @@
+'use strict';
 // load the things we need
-var mongoose = require('mongoose');
-var bcrypt   = require('bcryptjs');
-var mongooseUniqueValidator = require('mongoose-unique-validator');
+const mongoose = require('mongoose');
+const bcrypt   = require('bcryptjs');
+const mongooseUniqueValidator = require('mongoose-unique-validator');
+
+// Define our constant variables
+const emailRgx = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+const validateEmail = (email) =>  emailRgx.test(email);
+
 // define the schema for our user model
-var validateEmail = function(email) {
-    var re = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
-    return re.test(email)
-};
-
 var userSchema = mongoose.Schema({
-
-    local: {
+        _id:  String,
+        createdAt: Number,
+        local: {
         name : String,
         email: String,
         password : String,
@@ -28,9 +30,11 @@ var userSchema = mongoose.Schema({
         email :String
     }
 
-}, {
-  timestamps: true
-  });
+}
+// , {
+//   timestamps: true
+// }
+);
 
 // generating a hash
 userSchema.methods.generateHash = function(password) {
