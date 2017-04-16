@@ -260,9 +260,11 @@ router.post("/googleuser", function(req, res) {
                     });
                 }
                 else {
+                    let token = jwt.sign({user: user}, secrets.jwt, {expiresIn: 7200});
                     res.status(201).json({
                         message: 'Google User created',
-                        user_id: doc._id,
+                        id: user.id,
+                        token: token,
                         count: num
                     });
                 }
