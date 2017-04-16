@@ -10,21 +10,20 @@ const express = require('express');
 const router = express.Router();
 const transporter = require('../config/emailsender');
 const host = "http://localhost:3000";
-const neo4j = require('neo4j-driver').v1;
+
+const { ObjectID } = require('mongodb');
 
 const {confirmEmail, orderConfirm} = require('../emails/emails.js');
-
+const neo4j = require('neo4j-driver').v1;
 var driver = neo4j.driver("bolt://localhost", neo4j.auth.basic("neo4j", secrets.neo4j));
 var session = driver.session();
 
-function validateEmail(email) {
-    var re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-    return re.test(email);
-}
+const emailRgx = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+const validateEmail = email =>  emailRgx.test(email);
+
+
 
 router.post('/signup', function(req,res){
-    console.log('Hit the route jack');
-
 
     if(req.body.email !== undefined && req.body.password !== undefined){
         User.findOne({'local.email': req.body.email}, function(err,user){
@@ -36,6 +35,8 @@ router.post('/signup', function(req,res){
             }
             else{
                 let usr = new User();
+                usr._id = (new ObjectID()).toString();
+                usr.createdAt = (new Date()).getTime();
                 usr.local.name = req.body.name;
                 usr.local.password = usr.generateHash(req.body.password); //one way, cannot be decrypted
                 usr.local.email = req.body.email;
@@ -48,8 +49,6 @@ router.post('/signup', function(req,res){
                     });
                 }
                 res.status(200).send({ mail: usr.local.email});
-                //res.redirect('/user/send/' + usr.local.email);
-
                 });
             }
         });
@@ -112,7 +111,7 @@ router.get('/verify',function(req,res){
             if(user){
                 var mid = user.id.toString();
                 session
-                    .run("CREATE(n:User {mongoId:{idParam}}) RETURN n.name", {idParam: mid})
+                    .run("CREATE(n:User {mongoId:{idParam}, name:{uName}}) RETURN n.name", {idParam: mid, uName: user.local.name })
                     .then(function(result){
                         console.log('agregado a neo4j');
                         user.local.verified = true;
@@ -177,7 +176,7 @@ router.post("/login", function(req, res) {
 
 
 router.post("/fbuser", function(req, res) {
-    console.log(req.body);
+    console.log('/fbuser data', req.body);
     User.findOne({'facebook.email': req.body.user.email}, function(err, user){
         if (err) {
             console.log(err);
@@ -194,16 +193,39 @@ router.post("/fbuser", function(req, res) {
                 id: user.id,
                 token: token
             });
-
         }
         else{
-            user = new User();
-            user.facebook.email = req.body.user.email;
-            user.facebook.id = req.body.user.id;
-            user.facebook.token = req.body.user.token;
-            user.facebook.name = req.body.user.name;
-            console.log('user to be saved', user);
-            user.save(function (err, doc, num) {
+            let _id = (new ObjectID()).toString();
+            const  createdAt = (new Date()).getTime();
+            const id = req.body.user.id;
+            const email = req.body.user.email;
+            const token = req.body.user.token;
+            const name = req.body.user.name;
+            const updatedUser = {
+                $setOnInsert: {
+                    _id,
+                    createdAt,
+                    local : {
+                        email,
+                        name,
+                        verified: true
+                    }
+                }, facebook : {
+                    id,
+                    email,
+                    token,
+                    name
+                }
+            };
+            console.log('user to be saved', updatedUser);
+
+            User.findOneAndUpdate(
+                {'local.email': email}, 
+                updatedUser, 
+                {
+                    upsert:true,
+                    new: true
+                }, (err, doc) => {
                 if (err) {
                     console.log(err);
                     return res.status(500).json({
@@ -212,12 +234,22 @@ router.post("/fbuser", function(req, res) {
                     });
                 }
                 else {
-                    let token = jwt.sign({user: user}, secrets.jwt, {expiresIn: 7200});
-                    res.status(201).json({
-                        message: 'Facebook User created',
-                        id: user.id,
-                        token: token,
-                        count: num
+                    _id = (doc) ? doc._id : _id;
+                     session
+                    .run("MERGE(n:User {name:{uName}, _id:{idParam}}) RETURN n.name", {uName: name, idParam: _id, })
+                    .then(function(result){
+                        console.log(result, 'agregado a neo4j');
+                        session.close();
+                        let authtoken = jwt.sign({user: doc}, secrets.jwt, {expiresIn: 7200});
+                        res.status(201).json({
+                            message: 'Facebook User created',
+                            id: _id,
+                            token: authtoken,
+                        });
+                    })
+                    .catch(function(error){
+                        console.log(error);
+                        session.close();
                     });
                 }
             });
@@ -226,7 +258,7 @@ router.post("/fbuser", function(req, res) {
 });
 
 router.post("/googleuser", function(req, res) {
-    console.log(req.body);
+    console.log('/googleuser data', req.body);
     User.findOne({'google.email': req.body.user.email}, function(err, user){
         if (err) {
             console.log(err);
@@ -235,7 +267,6 @@ router.post("/googleuser", function(req, res) {
                 error: err
             });
         }
-
         if(user){
             console.log('google user already on our DB');
             let token = jwt.sign({user: user}, secrets.jwt, {expiresIn: 7200});
@@ -243,15 +274,38 @@ router.post("/googleuser", function(req, res) {
                 id: user.id,
                 token: token
             });
-
         }
         else{
-            user = new User();
-            user.google.email = req.body.user.email;
-            user.google.id = req.body.user.id;
-            user.google.name = req.body.user.name;
-            console.log('user to be saved', user);
-            user.save(function (err, doc, num) {
+            let _id = (new ObjectID()).toString();
+            const createdAt = (new Date()).getTime();
+            const id = req.body.user.id;
+            const email = req.body.user.email;
+            const name = req.body.user.name;
+            
+            const updatedUser = {
+                $setOnInsert: {
+                    _id,
+                    createdAt,
+                    local : {
+                        email,
+                        name,
+                        verified: true
+                    } 
+                }, google : {
+                    id,
+                    email,
+                    name
+                }
+            };
+            console.log('user to be saved', updatedUser);
+
+            User.findOneAndUpdate(
+                {'local.email': email}, 
+                updatedUser, 
+                {
+                    upsert:true,
+                    new: true
+                }, (err, doc) => {
                 if (err) {
                     console.log(err);
                     return res.status(500).json({
@@ -260,18 +314,30 @@ router.post("/googleuser", function(req, res) {
                     });
                 }
                 else {
-                    res.status(201).json({
-                        message: 'Google User created',
-                        user_id: doc._id,
-                        count: num
+                    _id = (doc) ? doc._id : _id;
+                     session
+                    .run("MERGE(n:User {name:{uName}, _id:{idParam}}) RETURN n.name", {uName: name, idParam: _id, })
+                    .then(function(result){
+                        console.log(result, 'agregado a neo4j');
+                        session.close();
+                        new User()
+                        let token = jwt.sign({user: new User()}, secrets.jwt, {expiresIn: 7200});
+                        res.status(201).json({
+                            message: 'Google User created',
+                            token: token,
+                            user_id:  _id,
+                        });
+                    })
+                    .catch(function(error){
+                        console.log(error);
+                        session.close();
                     });
+                    
                 }
             });
         }
     });
 });
-
-
 
 router.use('/', function(req,res,next){
 
@@ -282,6 +348,7 @@ router.use('/', function(req,res,next){
                     error :err
                 });
             }
+            console.log(decoded);
             next(); //let the request continue
         })
 });

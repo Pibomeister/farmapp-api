@@ -50,7 +50,7 @@ app.use('/order', orderRoutes);
 
 
 app.use(bodyParser.urlencoded({ extended: false }));
-//Always send the angular app regardless of the route
+
 
 console.log(moment().format());
 
@@ -62,10 +62,9 @@ app.get('/bien', (req,res)=>{
     res.send("succesfulll");
 });
 
-app.get('*', (req, res) => {
-	
+//Always send the angular app regardless of the route
+app.get('*', (req, res) => {	
    res.sendFile(path.join(__dirname, 'dist/index.html'));
-   
 });
 
 
