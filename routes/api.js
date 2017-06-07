@@ -1,7 +1,9 @@
 'use strict';
 
 const express = require('express');
+const fs = require('fs');
 const router = express.Router();
+const Pharmacy = require('../models/pharmacy');
 const Drug = require('../models/drugs.js');
 const User = require('../models/user');
 const secrets = require('../config/secrets');
@@ -27,37 +29,81 @@ module.exports = function(passport) {
 
     });
 
-    router.post('/drugs', function (req, res, next) {
-        var body = req.body;
-        var userid = req.query.userid;
-        User.findById(userid, function(err, user){
-            /*if(!user){
-               return res.json({error: "Usuario invalido"});
-            }*/
+    function transformToBoolean(n){
+        return n=='X' ? true : false;
+    }
+
+    function insertDrugsToDB(drugs) {
+        var count = 0;
+        for(var drug of drugs) {
             var dr = new Drug({
-                name : body.name,
-                fancyName : body.fancyName,
-                price : body.price,
-                discount: body.discount,
-                rating : body.rating,
-                imgUrl : body.imgUrl,
-                user : userid
+            _id: drug.codigo,
+            name : drug.descripcion,
+            existent : parseInt(drug.existencia),
+            substance : drug.sustancia,
+            laboratory : drug.laboratorio,
+            price : parseFloat(drug.preciofarmacia),
+            rating: [],
+            discount : parseFloat(drug.descuento.slice(0,-1)),
+            perf : transformToBoolean(drug.PERF),
+            medic : transformToBoolean(drug.MEDIC),
+            Antib : transformToBoolean(drug.ANTIB),
+            Gen: transformToBoolean(drug.GEN),
+            Ctrl : transformToBoolean(drug.CTRL),
+            Refrig : transformToBoolean(drug.REFRIG),
+            Normal : transformToBoolean(drug.NORMAL),
+            Bonif : transformToBoolean(drug.BONIF),
+            Limit : transformToBoolean(drug.LIMIT),
+            Expires : transformToBoolean(drug.CADUCA),
+            RetForExp : transformToBoolean(drug.DEVXCAD),
+            FFS: transformToBoolean(drug.FFS),
+            //imgUrl : ''
+            imgUrl: "/images/" + drug.codigo + ".jpg",
+                pharmacies : []
             }).save(function(err, data){
-                if(err) res.json({"Error": err});
-                else
-                    res.json({"Respuesta": "Satisfactorio"});
+            if(err){
+                console.log("COUNT VALUE", count);
+                console.log(err);
+            } 
+            else {
+                //console.log('insercion succesful', count);
+                count++;
+
+            }
             });
+        }
+    }
 
 
+    router.post('/drugs', function (req, res, next) {
+        //var drugs = req.body;
+        //var total = drugs.length;
+        fs.readFile('./catalogo.json', (err, data) => {
+        if (err) throw err;
+            var obj = JSON.parse(data);
+            insertDrugsToDB(obj);
         });
+        //insertDrugsToDB(drugs);
+        /*res.json({
+            "msg" : "inserted a total of " + total + " records"
+        });*/
+
+        
+
 
 
     });
     
     router.get('/drug/:did', (req, res)=> {
-        Drug.findById(req.params.did, (err, doc)=>{
-            if(err) return res.status(500).send('Internal server error');
-            session
+            Drug.findById(req.params.did).populate('pharmacies')
+            .exec(function (err, result) {
+                if (err) return res.status(500).send('Internal server error');
+                res.json(result);
+            })
+        });
+
+
+            /*session
                 .run(`MATCH(n:Drug{_id:{did} })<-[:PURCHASED]-(o:User)
                     MATCH (o)-[:PURCHASED]->(rec:Drug)
                     WHERE NOT(rec._id = {did})
@@ -67,11 +113,63 @@ module.exports = function(passport) {
                     res.send({drug: doc, recommendations});
                     session.close();     
                 }).catch(err =>{
-                    console.log('dat error', error);
+                    console.log('dat error', err);
                     session.close();
-                });       
+                });
         });
-    })
+    })*/
+
+    router.get('/pharmacy', function(req,res){
+        Pharmacy.find(function (err, data) {
+            if (err) console.log(err);
+            else {
+                res.json(data);
+            }
+        });
+    });
+
+    router.get('/pharmacyTest', function(req,res){
+
+        Drug.findById('7501023108849')
+            .populate('pharmacies')
+            .exec(function(err,result){
+                if(err) res.json({error:err});
+                res.json({result:result});
+        });
+
+    });
+
+    router.post('/pharmacy', function (req, res, next) {
+
+        fs.readFile('./farmacias.json', (err, data) => {
+            if (err) throw err;
+            var obj = JSON.parse(data);
+            var records = insertPharmaciesToDB(obj);
+            res.send('insertados ' + records + ' registros');
+        });
+
+    });
+
+    function insertPharmaciesToDB(pharmacies){
+        var count = 0;
+        for(var pharmacy of pharmacies){
+            var pharmacyModel = new Pharmacy({
+                name : pharmacy.name,
+                address : pharmacy.address,
+                lat : pharmacy.lat,
+                lng : pharmacy.lng
+            }).save(function(err, data){
+                if(err){
+                    console.log(err);
+                }
+                else {
+                    count++;
+                }
+            });
+        }
+
+        return count;
+    }
 
     // router.post('/drugneo4j', function(req,res) {
     //     var productname = req.body.name;

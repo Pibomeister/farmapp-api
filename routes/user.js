@@ -27,7 +27,7 @@ router.post('/signup', function(req,res){
 
     if(req.body.email !== undefined && req.body.password !== undefined){
         User.findOne({'local.email': req.body.email}, function(err,user){
-            console.log(user);
+            console.log(req.body.password);
             if(user){
                 return res.status(403).json({
                     title : 'Correo ya existente'
@@ -143,6 +143,7 @@ router.post("/login", function(req, res) {
         var password = req.body.password;
     }
     User.findOne({'local.email': email}, function (err, user) {
+        console.log(user);
         if (err) {
             return res.status(500).json({
                 title: 'error occured',
@@ -150,7 +151,6 @@ router.post("/login", function(req, res) {
             });
         }
         if (!user || !user.validPassword(password)) {
-            console.log(password);
             return res.status(404).json({
                 title: 'Login Failed',
                 error: {message: 'invalid credentials'}

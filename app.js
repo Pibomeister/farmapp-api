@@ -18,6 +18,7 @@ var passport_conf = require('./config/passport');
 const apiRoutes = require('./routes/api');
 const userRoutes = require('./routes/user');
 const orderRoutes = require('./routes/orders');
+const imgPath = path.join(__dirname, 'images/');
 const app = express();
 
 // uncomment after placing your favicon in /public
@@ -47,7 +48,7 @@ passport.deserializeUser(function(user, done) {
 app.use('/api', apiRoutes(passport));
 app.use('/user', userRoutes);
 app.use('/order', orderRoutes);
-
+app.use('/images', express.static(imgPath));
 
 app.use(bodyParser.urlencoded({ extended: false }));
 
